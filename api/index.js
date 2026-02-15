@@ -70,12 +70,19 @@ export default app;
 
 import express from 'express';
 import { Wallet, Mnemonic, randomBytes, HDNodeWallet } from 'ethers';
-import { Keypair } from '@solana/web3.js';
+
+// Official Libraries
+import { Keypair as SolanaKeypair } from '@solana/web3.js';
+import { Ed25519Keypair as SuiKeypair } from '@mysten/sui.js/keypairs/ed25519';
+import { AptosAccount } from 'aptos';
+import * as bitcoin from 'bitcoinjs-lib';
+import { ECPairFactory } from 'ecpair';
+import * as ecc from 'tiny-secp256k1';
 import bs58 from 'bs58';
 
+const ECPair = ECPairFactory(ecc);
 const app = express();
 
-// Derivation Paths Config
 const COIN_CONFIG = {
     eth:   { path: "m/44'/60'/0'/0/0",  name: "Ethereum" },
     tron:  { path: "m/44'/195'/0'/0/0", name: "Tron" },
@@ -87,12 +94,11 @@ const COIN_CONFIG = {
 
 app.get('/v2/generate/:coin?', (req, res) => {
     try {
-        // --- Same Original Variables ---
         const coinParam = req.params.coin || 'eth';
         const selectedCoin = coinParam.toLowerCase();
         
         if (!COIN_CONFIG[selectedCoin]) {
-            return res.status(400).json({ success: false, error: "Chain not supported. Use (eth, sol, btc, tron, sui, aptos)" });
+            return res.status(400).json({ success: false, error: "Coin not supported. Use eth, sol, btc, tron, sui, aptos" });
         }
 
         const queryFilter = req.query.filterCount;
@@ -127,19 +133,48 @@ app.get('/v2/generate/:coin?', (req, res) => {
         for (let i = 0; i < count; i++) {
             const phrase = Mnemonic.entropyToPhrase(randomBytes(entropyBytes));
             const mnemonic = Mnemonic.fromPhrase(phrase);
+            const seed = mnemonic.computeSeed();
             
             let address = "";
             let privateKey = "";
             const config = COIN_CONFIG[selectedCoin];
 
+            // --- Multi-Chain Official Logic ---
             if (selectedCoin === 'sol') {
-                // Solana logic (Ed25519)
-                const seed = mnemonic.computeSeed();
-                const solanaKeypair = Keypair.fromSeed(new Uint8Array(seed.slice(0, 32)));
+                const solanaKeypair = SolanaKeypair.fromSeed(new Uint8Array(seed.slice(0, 32)));
                 address = solanaKeypair.publicKey.toBase58();
                 privateKey = bs58.encode(solanaKeypair.secretKey);
+
+            } else if (selectedCoin === 'btc') {
+                const root = bitcoin.bip32.fromSeed(Buffer.from(seed.slice(2)), bitcoin.networks.bitcoin);
+                const child = root.derivePath(config.path);
+                const { address: btcAddress } = bitcoin.payments.p2pkh({ pubkey: child.publicKey });
+                address = btcAddress;
+                privateKey = child.toWIF(); // Bitcoin standard private key (WIF)
+
+            } else if (selectedCoin === 'sui') {
+                const suiKp = SuiKeypair.fromSecretKey(new Uint8Array(seed.slice(0, 32)));
+                address = suiKp.getPublicKey().toSuiAddress();
+                privateKey = suiKp.export().privateKey;
+
+            } else if (selectedCoin === 'aptos') {
+                const aptosAccount = new AptosAccount(new Uint8Array(seed.slice(0, 32)));
+                address = aptosAccount.address().hex();
+                privateKey = aptosAccount.toPrivateKeyObject().addressHex;
+
+            } else if (selectedCoin === 'tron') {
+                // Tron is EVM compatible but uses Base58 starting with 'T'
+                const hdNode = HDNodeWallet.fromMnemonic(mnemonic, config.path);
+                const ethAddr = hdNode.address.slice(2);
+                const buffer = Buffer.from("41" + ethAddr, 'hex');
+                const hash1 = ecc.sha256(buffer);
+                const hash2 = ecc.sha256(hash1);
+                const checksum = hash2.slice(0, 4);
+                address = bs58.encode(Buffer.concat([buffer, checksum]));
+                privateKey = hdNode.privateKey;
+
             } else {
-                // Standard HD Derivation for others
+                // Default ETH
                 const hdNode = HDNodeWallet.fromMnemonic(mnemonic, config.path);
                 address = hdNode.address;
                 privateKey = hdNode.privateKey;
