@@ -1,8 +1,6 @@
 {
-  "name": "wallet-generator-api",
+  "name": "app",
   "version": "1.0.0",
-  "description": "Ethereum Wallet Generator using Viem",
-  "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
