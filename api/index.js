@@ -1,5 +1,5 @@
 import express from 'express';
-import { Secp256k1, Address, Mnemonic } from 'ox';
+import { Secp256k1, Address, Mnemonic, Wordlists } from 'ox';
 
 const app = express();
 
@@ -35,10 +35,10 @@ app.get('/v2/generate', (req, res) => {
         const wallets = [];
 
         for (let i = 0; i < count; i++) {
-            const phrase = Mnemonic.random(Mnemonic.Wordlists.en);
+            const phrase = Mnemonic.random(Wordlists.en);
             const privateKey = Mnemonic.toPrivateKey({
                 phrase, 
-                wordlist: Mnemonic.Wordlists.en 
+                wordlist: Wordlists.en 
             });
             const publicKey = Secp256k1.getPublicKey({ privateKey });
             const address = Address.fromPublicKey(publicKey);
