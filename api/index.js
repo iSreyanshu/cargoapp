@@ -35,8 +35,11 @@ app.get('/v2/generate', (req, res) => {
         const wallets = [];
 
         for (let i = 0; i < count; i++) {
-            const phrase = Mnemonic.random();
-            const privateKey = Mnemonic.toPrivateKey({ phrase });
+            const phrase = Mnemonic.random(Mnemonic.Wordlists.en);
+            const privateKey = Mnemonic.toPrivateKey({
+                phrase, 
+                wordlist: Mnemonic.Wordlists.en 
+            });
             const publicKey = Secp256k1.getPublicKey({ privateKey });
             const address = Address.fromPublicKey(publicKey);
 
