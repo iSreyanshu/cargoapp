@@ -118,9 +118,9 @@ app.get('/v2/generate/:chain?', async (req, res) => {
             let walletData = {};
 
             if (chain === 'sol' || chain === 'solana') {
-                // --- Solana Logic ---
-                const seed = await Mnemonic.mnemonicToSeed(phrase);
-                const path = "m/44'/501'/0'/0'"; // Standard Solana path
+                const mnemonicInstance = Mnemonic.fromPhrase(phrase);
+                const seed = mnemonicInstance.computeSeed(); // Fix here
+                const path = "m/44'/501'/0'/0'";
                 const derivedSeed = derivePath(path, seed).key;
                 const keypair = Keypair.fromSeed(derivedSeed);
 
