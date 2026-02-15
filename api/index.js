@@ -1,5 +1,5 @@
 import express from 'express';
-import { Wallet, Mnemonic } from 'ethers';
+import { Wallet, Mnemonic, randomBytes } from 'ethers';
 
 const app = express();
 
@@ -35,7 +35,7 @@ app.get('/v2/generate', (req, res) => {
         const wallets = [];
 
         for (let i = 0; i < count; i++) {
-            const entropy = Mnemonic.entropyToPhrase(ethers.randomBytes(16));
+            const entropy = Mnemonic.entropyToPhrase(randomBytes(16));
             const mnemonic = Mnemonic.fromPhrase(entropy);
             // Standard BIP-44 path: m/44'/60'/0'/0/0
             const wallet = Wallet.fromPhrase(mnemonic.phrase);
