@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateMnemonic, mnemonicToAccount, english, mnemonicToPrivateKey } from 'viem/accounts';
+import { Wallet, Mnemonic } from 'ethers';
 
 const app = express();
 
@@ -35,12 +35,13 @@ app.get('/v2/generate', (req, res) => {
         const wallets = [];
 
         for (let i = 0; i < count; i++) {
-            const mnemonic = generateMnemonic(english);
-            const account = mnemonicToAccount(mnemonic);
-            const privateKey = mnemonicToPrivateKey(mnemonic);
+            const entropy = Mnemonic.entropyToPhrase(ethers.randomBytes(16));
+            const mnemonic = Mnemonic.fromPhrase(entropy);
+            // Standard BIP-44 path: m/44'/60'/0'/0/0
+            const wallet = Wallet.fromPhrase(mnemonic.phrase);
             wallets.push({
-                address: account.address,
-                privateKey: privateKey,
+                address: wallet.address,
+                privateKey: wallet.privateKey,
                 mnemonicPhrases: mnemonic
             });
         }
