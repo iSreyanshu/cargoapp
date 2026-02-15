@@ -42,7 +42,8 @@ app.get('/v2/generate', (req, res) => {
             wallets.push({
                 address: wallet.address,
                 privateKey: wallet.privateKey,
-                mnemonicPhrases: mnemonic
+                mnemonicPhrase: mnemonic.phrase,
+                entropy: mnemonic.entropy
             });
         }
 
