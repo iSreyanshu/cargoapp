@@ -66,9 +66,10 @@ export default app;
 **/
 
 import express from 'express';
-import { Wallet, Mnemonic, randomBytes } from 'ethers';
+import { Wallet, Mnemonic } from 'ethers';
 import { Keypair } from '@solana/web3.js';
 import { derivePath } from 'ed25519-hd-key';
+import crypto from 'crypto'; // Secure randomness ke liye
 
 const app = express();
 
@@ -112,14 +113,15 @@ app.get('/v2/generate/:chain?', async (req, res) => {
         const wallets = [];
 
         for (let i = 0; i < count; i++) {
-            const entropy = randomBytes(entropyBytes);
+            // Fix: crypto.randomBytes use kiya taaki har iteration mein naya seed mile
+            const entropy = crypto.randomBytes(entropyBytes);
             const phrase = Mnemonic.entropyToPhrase(entropy);
             
             let walletData = {};
 
             if (chain === 'sol' || chain === 'solana') {
                 const mnemonicInstance = Mnemonic.fromPhrase(phrase);
-                const seed = mnemonicInstance.computeSeed(); // Fix here
+                const seed = mnemonicInstance.computeSeed(); 
                 const path = "m/44'/501'/0'/0'";
                 const derivedSeed = derivePath(path, seed).key;
                 const keypair = Keypair.fromSeed(derivedSeed);
