@@ -5,39 +5,39 @@ const app = express();
 
 app.get('/v2/generate', (req, res) => {
     try {
-        const queryFilter = req.query.filter;
+        const queryFilter = req.query.filterCount;
+        const queryPhraseLength = parseInt(req.query.phraseLength);
+        const queryBytes = parseInt(req.query.bytes);
+
         let count = 1;
         if (queryFilter) {
             count = parseInt(queryFilter);
-            
-            if (isNaN(count)) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Invalid 'filter' parameter."
-                });
-            }
+            if (isNaN(count)) return res.status(400).json({ success: false, error: "Invalid 'filter' parameter." });
+            if (count <= 0) return res.status(400).json({ success: false, error: "Count must be greater than 0." });
+            if (count > 99) return res.status(400).json({ success: false, error: "Maximum limit is 99 wallets per request." });
+        }
 
-            if (count <= 0) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Count must be greater than 0."
-                });
-            }
+        let entropyBytes = 16;
 
-            if (count > 99) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Maximum limit is 99 wallets per request."
-                });
+        if (queryPhraseLength) {
+            const lengthMap = { 12: 16, 15: 20, 18: 24, 21: 28, 24: 32 };
+            if (!lengthMap[queryPhraseLength]) {
+                return res.status(400).json({ success: false, error: "Invalid phraseLength. Use (12, 15, 18, 21, 24)" });
             }
+            entropyBytes = lengthMap[queryPhraseLength];
+        } else if (queryBytes) {
+            const allowedBytes = [16, 20, 24, 28, 32];
+            if (!allowedBytes.includes(queryBytes)) {
+                return res.status(400).json({ success: false, error: "Invalid bytes. Use (16, 20, 24, 28, 32)" });
+            }
+            entropyBytes = queryBytes;
         }
 
         const wallets = [];
 
         for (let i = 0; i < count; i++) {
-            const entropy = Mnemonic.entropyToPhrase(randomBytes(16));
-            const mnemonic = Mnemonic.fromPhrase(entropy);
-            // Standard BIP-44 path: m/44'/60'/0'/0/0
+            const phrase = Mnemonic.entropyToPhrase(randomBytes(entropyBytes));
+            const mnemonic = Mnemonic.fromPhrase(phrase);
             const wallet = Wallet.fromPhrase(mnemonic.phrase);
             wallets.push({
                 address: wallet.address,
