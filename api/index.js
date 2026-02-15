@@ -39,7 +39,7 @@ app.get('/v2/generate', (req, res) => {
             const account = mnemonicToAccount(mnemonic);
             wallets.push({
                 address: account.address,
-                privateKey: account.privateKey,
+                privateKey: String(account.privateKey),
                 mnemonicPhrases: mnemonic
             });
         }
