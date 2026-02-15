@@ -1,5 +1,5 @@
 import express from 'express';
-import { generateMnemonic, mnemonicToAccount, english } from 'viem/accounts';
+import { generateMnemonic, mnemonicToAccount, english, mnemonicToPrivateKey } from 'viem/accounts';
 
 const app = express();
 
@@ -37,9 +37,10 @@ app.get('/v2/generate', (req, res) => {
         for (let i = 0; i < count; i++) {
             const mnemonic = generateMnemonic(english);
             const account = mnemonicToAccount(mnemonic);
+            const privateKey = mnemonicToPrivateKey(mnemonic);
             wallets.push({
                 address: account.address,
-                privateKey: String(account.privateKey),
+                privateKey: privateKey,
                 mnemonicPhrases: mnemonic
             });
         }
