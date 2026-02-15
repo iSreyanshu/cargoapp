@@ -13,7 +13,7 @@ app.get('/v2/generate', (req, res) => {
             if (isNaN(count)) {
                 return res.status(400).json({
                     success: false,
-                    error: "Invalid 'filter' parameter. Please provide a number."
+                    error: "Invalid 'filter' parameter."
                 });
             }
 
